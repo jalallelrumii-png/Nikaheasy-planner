@@ -1,11 +1,11 @@
 {
-  "name": "NikahEasy Planner",
+  "name": "NikahEasy Premium",
   "short_name": "NikahEasy",
-  "description": "Aplikasi penyederhana persiapan pernikahan offline-first.",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#ff758c",
+  "background_color": "#F9FAFB",
+  "theme_color": "#FFFFFF",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "https://cdn-icons-png.flaticon.com/512/2904/2904979.png",
@@ -15,4 +15,3 @@
     }
   ]
 }
-
