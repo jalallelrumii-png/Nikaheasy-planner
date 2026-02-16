@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NikahEasy - Wedding Planner</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body { background-color: #fff5f7; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 1.5rem; }
+        .gradient-pink { background: linear-gradient(135deg, #ff758c 0%, #ff7eb3 100%); }
+    </style>
+</head>
+<body class="max-w-md mx-auto p-4 pb-24">
+
+    <div class="card gradient-pink text-white text-center shadow-lg">
+        <h1 class="text-xl font-bold uppercase tracking-wider">💍 Hari Bahagia Kami</h1>
+        <div id="countdown" class="text-3xl font-black my-3 drop-shadow-md">00:00:00:00</div>
+        <p class="text-[10px] opacity-90 mb-2">Hari : Jam : Menit : Detik</p>
+        <input type="date" id="weddingDate" onchange="saveWeddingDate()" class="text-black text-xs p-2 rounded-lg outline-none w-full max-w-[150px] mx-auto block">
+    </div>
+
+    <div class="card">
+        <h2 class="font-bold mb-3 flex items-center text-pink-600">✅ Checklist Persiapan</h2>
+        <div class="flex gap-2 mb-4">
+            <input id="taskInput" type="text" placeholder="Tambah tugas (ex: Cari Gedung)" class="flex-1 border-b-2 border-pink-100 outline-none focus:border-pink-500 p-1 text-sm">
+            <button onclick="addTask()" class="bg-pink-500 text-white px-4 py-1 rounded-full text-lg">+</button>
+        </div>
+        <ul id="taskList" class="space-y-2 max-h-48 overflow-y-auto"></ul>
+    </div>
+
+    <div class="card">
+        <h2 class="font-bold mb-3 text-green-700">💰 Budget Tracker</h2>
+        <div class="bg-green-50 p-3 rounded-xl text-xs space-y-2 mb-4">
+            <input id="budgetItem" type="text" placeholder="Item (ex: Catering)" class="w-full p-2 border rounded">
+            <div class="flex gap-2">
+                <input id="budgetCost" type="number" placeholder="Total Harga" class="w-1/2 p-2 border rounded">
+                <input id="budgetPaid" type="number" placeholder="DP/Bayar" class="w-1/2 p-2 border rounded">
+            </div>
+            <button onclick="addBudget()" class="w-full bg-green-600 text-white py-2 rounded-lg font-bold">Tambah Anggaran</button>
+        </div>
+        <div id="budgetList" class="space-y-2"></div>
+        <div class="pt-3 border-t mt-3 flex justify-between items-center">
+            <span class="text-sm font-bold">Total Sisa Tagihan:</span>
+            <span id="totalRemaining" class="text-red-600 font-black">Rp 0</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2 class="font-bold mb-3 text-gray-700">📞 Kontak Penting</h2>
+        <div class="space-y-3 text-sm">
+            <div class="flex flex-col">
+                <label class="text-[10px] text-gray-400">CATERING</label>
+                <input type="text" placeholder="Nama/WA" class="vendor-input border-b outline-none focus:border-pink-400" id="v_catering">
+            </div>
+            <div class="flex flex-col">
+                <label class="text-[10px] text-gray-400">FOTOGRAFER</label>
+                <input type="text" placeholder="Nama/WA" class="vendor-input border-b outline-none focus:border-pink-400" id="v_photo">
+            </div>
+            <div class="flex flex-col">
+                <label class="text-[10px] text-gray-400">MUA</label>
+                <input type="text" placeholder="Nama/WA" class="vendor-input border-b outline-none focus:border-pink-400" id="v_mua">
+            </div>
+        </div>
+    </div>
+
+    <div class="fixed bottom-6 right-6">
+        <button onclick="exportToPDF()" class="bg-blue-600 text-white px-6 py-3 rounded-full shadow-2xl font-bold flex items-center gap-2 hover:scale-105 transition-transform">
+            <span>📄 Export PDF</span>
+        </button>
+    </div>
+
+    <script>
+        let timer;
+
+        // --- COUNTDOWN LOGIC ---
+        function updateCountdown() {
+            const date = localStorage.getItem('wedding_date');
+            if (!date) return;
+            const target = new Date(date).getTime();
+            const now = new Date().getTime();
+            const gap = target - now;
+            if (gap < 0) { document.getElementById('countdown').innerText = "HARI H!"; return; }
+            const d = Math.floor(gap / (1000*60*60*24));
+            const h = Math.floor((gap % (1000*60*60*24)) / (1000*60*60));
+            const m = Math.floor((gap % (1000*60*60)) / (1000*60));
+            const s = Math.floor((gap % (1000*60)) / 1000);
+            document.getElementById('countdown').innerText = `${d}:${h}:${m}:${s}`;
+        }
+
+        function saveWeddingDate() {
+            localStorage.setItem('wedding_date', document.getElementById('weddingDate').value);
+            if(timer) clearInterval(timer);
+            timer = setInterval(updateCountdown, 1000);
+        }
+
+        // --- CHECKLIST LOGIC ---
+        function addTask() {
+            const input = document.getElementById('taskInput');
+            if (!input.value) return;
+            const li = document.createElement('li');
+            li.className = "flex justify-between items-center bg-pink-50 p-2 rounded-lg text-sm";
+            li.innerHTML = `<span>${input.value}</span> <button onclick="this.parentElement.remove(); saveAll()" class="text-red-500">✕</button>`;
+            document.getElementById('taskList').appendChild(li);
+            input.value = '';
+            saveAll();
+        }
+
+        // --- BUDGET LOGIC ---
+        function addBudget() {
+            const item = document.getElementById('budgetItem'), cost = document.getElementById('budgetCost'), paid = document.getElementById('budgetPaid');
+            if (!item.value || !cost.value) return;
+            const remaining = cost.value - (paid.value || 0);
+            const div = document.createElement('div');
+            div.className = "budget-entry flex justify-between items-center p-2 bg-gray-50 rounded-lg text-xs";
+            div.dataset.rem = remaining;
+            div.innerHTML = `<div><b>${item.value}</b><br><span class="text-gray-400 text-[10px]">Total: ${parseInt(cost.value).toLocaleString()}</span></div>
+                             <div class="text-right"><span class="text-red-500 font-bold">Sisa: ${remaining.toLocaleString()}</span></div>
+                             <button onclick="this.parentElement.remove(); calcBudget(); saveAll()" class="ml-2 text-gray-300">✕</button>`;
+            document.getElementById('budgetList').appendChild(div);
+            item.value = ''; cost.value = ''; paid.value = '';
+            calcBudget(); saveAll();
+        }
+
+        function calcBudget() {
+            let total = 0;
+            document.querySelectorAll('.budget-entry').forEach(el => total += parseFloat(el.dataset.rem));
+            document.getElementById('totalRemaining').innerText = "Rp " + total.toLocaleString('id-ID');
+        }
+
+        // --- STORAGE & LOAD ---
+        function saveAll() {
+            localStorage.setItem('tasks', document.getElementById('taskList').innerHTML);
+            localStorage.setItem('budgets', document.getElementById('budgetList').innerHTML);
+            const vendors = {};
+            document.querySelectorAll('.vendor-input').forEach(el => vendors[el.id] = el.value);
+            localStorage.setItem('vendors', JSON.stringify(vendors));
+        }
+
+        window.onload = () => {
+            if(localStorage.getItem('tasks')) document.getElementById('taskList').innerHTML = localStorage.getItem('tasks');
+            if(localStorage.getItem('budgets')) {
+                document.getElementById('budgetList').innerHTML = localStorage.getItem('budgets');
+                calcBudget();
+            }
+            const vData = JSON.parse(localStorage.getItem('vendors') || '{}');
+            for(let id in vData) document.getElementById(id).value = vData[id];
+            if(localStorage.getItem('wedding_date')) {
+                document.getElementById('weddingDate').value = localStorage.getItem('wedding_date');
+                timer = setInterval(updateCountdown, 1000);
+            }
+            document.querySelectorAll('.vendor-input').forEach(el => el.addEventListener('input', saveAll));
+        };
+
+        // --- EXPORT PDF ---
+        function exportToPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFontSize(20); doc.text("RENCANA PERNIKAHAN", 20, 20);
+            doc.setFontSize(10); doc.text("Dicetak dari NikahEasy App", 20, 28);
+            
+            let y = 40;
+            doc.text("--- DAFTAR BUDGET (SISA TAGIHAN) ---", 20, y);
+            document.querySelectorAll('.budget-entry').forEach(el => {
+                y += 7; doc.text("- " + el.innerText.replace('✕', ''), 25, y);
+            });
+            
+            y += 15; doc.text("--- CHECKLIST TUGAS ---", 20, y);
+            document.querySelectorAll('#taskList li span').forEach(el => {
+                y += 7; doc.text("[ ] " + el.innerText, 25, y);
+            });
+
+            doc.save("RencanaNikah.pdf");
+        }
+
+        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
+    </script>
+</body>
+</html>
